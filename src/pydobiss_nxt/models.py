@@ -1,16 +1,17 @@
 """Typed models for the DOBISS NXT API payloads.
 
-Built with Pydantic v2. Field names mirror the raw JSON keys of the NXT
-API so payloads can be parsed without alias gymnastics; snake_case
-properties expose cleaner accessors where the raw name is awkward.
+Built with Pydantic v2 and validated against a real NXT firmware 4.30
+discovery payload. Quirks handled (all observed in the wild):
 
-The models are deliberately *tolerant*:
-
-* unknown ``type`` / ``icons_id`` values fall back to plain ``int``
-  instead of failing validation (new DOBISS firmware must not break us);
-* unknown extra JSON keys are preserved (``extra="allow"``) so they can
-  be surfaced verbatim in Home Assistant diagnostics later.
+* numbers arrive sometimes as strings ("8"), sometimes as ints (202);
+* ``dimmable`` is ``null`` for non-dimmable outputs;
+* ``settings`` is a dict — or an empty *list* when empty (PHP-ism);
+* unknown ``type``/``icons_id`` values fall back to plain ``int``;
+* unknown extra JSON keys are preserved (``extra="allow"``) for
+  Home Assistant diagnostics.
 """
+
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -18,11 +19,7 @@ from .const import IconId, ModuleType
 
 
 class DobissSubject(BaseModel):
-    """A single output/subject as returned by the discovery endpoint.
-
-    "Subject" is DOBISS wording: one controllable channel of a module —
-    a light, a socket, one direction of a cover, a scenario slot, ...
-    """
+    """A single output/subject as returned by the discovery endpoint."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -32,12 +29,38 @@ class DobissSubject(BaseModel):
     dimmable: bool
     type: ModuleType | int
     icons_id: IconId | int
+    tags: str | None = None
+    device_info: dict[str, Any] | None = None
+    settings: dict[str, Any] = {}
 
     @field_validator("dimmable", mode="before")
     @classmethod
     def _null_means_not_dimmable(cls, value: object) -> object:
-        """NXT firmware (seen on 4.30) sends ``null`` for non-dimmable outputs."""
+        """NXT (seen on 4.30) sends ``null`` for non-dimmable outputs."""
         return False if value is None else value
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def _coerce_module_type(cls, value: object) -> object:
+        """Prefer the enum: NXT sends "8" (str) or 202 (int) inconsistently."""
+        try:
+            return ModuleType(int(value))  # type: ignore[call-overload]
+        except (ValueError, TypeError):
+            return value
+
+    @field_validator("icons_id", mode="before")
+    @classmethod
+    def _coerce_icon_id(cls, value: object) -> object:
+        try:
+            return IconId(int(value))  # type: ignore[call-overload]
+        except (ValueError, TypeError):
+            return value
+
+    @field_validator("settings", mode="before")
+    @classmethod
+    def _empty_list_is_empty_dict(cls, value: object) -> object:
+        """NXT serialises an empty settings dict as ``[]``."""
+        return {} if value == [] else value
 
     @property
     def key(self) -> str:
@@ -77,6 +100,15 @@ class TempCalendar(BaseModel):
     name: str
 
 
+class IconInfo(BaseModel):
+    """One entry of the icon catalog sent at the root of discovery."""
+
+    model_config = ConfigDict(extra="allow")
+
+    name: str
+    type: str | None = None
+
+
 class DiscoveryResponse(BaseModel):
     """Full payload of the discovery endpoint."""
 
@@ -84,7 +116,24 @@ class DiscoveryResponse(BaseModel):
 
     groups: list[DobissGroup]
     temp_calendars: list[TempCalendar] = []
+    icons: dict[str, IconInfo] = {}
+    audio_sources: dict[str, Any] = {}
+    ventilation_modes: list[Any] = []
 
     def all_subjects(self) -> list[DobissSubject]:
         """Flatten every output of every group into a single list."""
         return [s for g in self.groups for s in g.subjects]
+
+    def unique_subjects(self) -> list[DobissSubject]:
+        """Like :meth:`all_subjects` but deduplicated by :attr:`key`.
+
+        DOBISS groups may overlap (one output listed in several rooms);
+        entity creation must use this view.
+        """
+        seen: set[str] = set()
+        out: list[DobissSubject] = []
+        for s in self.all_subjects():
+            if s.key not in seen:
+                seen.add(s.key)
+                out.append(s)
+        return out

@@ -41,7 +41,7 @@ async def main() -> int:
         # --- raw payload, kept verbatim for model refinement ---------
         raw = await client._request("GET", "discover")  # noqa: SLF001
         out = Path(__file__).parent / "discovery_raw.json"
-        out.write_text(json.dumps(raw, indent=2, ensure_ascii=False))
+        out.write_text(json.dumps(raw, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"Payload brut sauvé dans {out}\n")
 
         # --- parsed view ---------------------------------------------
