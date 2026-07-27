@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to your DOBISS NXT",
+        "description": "Enter the address of the NXT server and the API secret from Global settings \u2192 API.",
+        "data": {
+          "host": "Host (IP address or hostname)",
+          "secret": "API secret"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the NXT server. Check the address and your network.",
+      "invalid_auth": "The NXT rejected the API secret. Check it in Global settings \u2192 API."
+    },
+    "abort": {
+      "already_configured": "This NXT server is already configured."
+    }
+  }
+}
