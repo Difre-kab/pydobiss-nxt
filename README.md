@@ -1,96 +1,67 @@
-# DOBISS NXT for Home Assistant
+# pydobiss-nxt
 
-A modern, fully typed Home Assistant integration for the **DOBISS NXT**
-home automation server — real-time, local, no cloud.
+[![PyPI](https://img.shields.io/pypi/v/pydobiss-nxt)](https://pypi.org/project/pydobiss-nxt/)
 
-Built on top of [`pydobiss-nxt`](https://pypi.org/project/pydobiss-nxt/),
-a standalone async Python library developed alongside this integration.
+Async Python client for the **DOBISS NXT** home automation server
+(local REST + WebSocket API). Fully typed (`mypy --strict`), built on
+`aiohttp` and Pydantic v2. Powers the
+[`ha-dobiss-nxt`](https://github.com/Difre-kab/ha-dobiss-nxt) Home
+Assistant integration, but is usable entirely on its own.
 
-> **Status: work in progress.** Lights (relays + dimmers) are live.
-> See [ROADMAP.md](ROADMAP.md) for what's done and what's next.
+## Install
 
-## Features
+```bash
+pip install pydobiss-nxt
+```
 
-- **Local push** — state changes arrive over the NXT WebSocket in
-  real time. Press a wall switch, watch Home Assistant update within a
-  second. No polling, no cloud.
-- **Config flow UI** — set up from the interface with host + API
-  secret; connection is validated live against the NXT.
-- **Lights** — every relay output configured with a light icon becomes
-  a `light` entity; dimmer (0-10V/DALI) outputs get full brightness
-  control.
-- **Resilient by design** — automatic WebSocket reconnection with
-  exponential backoff; NXT reboots are absorbed silently
-  (`ConfigEntryNotReady` → Home Assistant retries).
+## Quick start
 
-## Architecture
+```python
+import asyncio
+from aiohttp import ClientSession
+from pydobiss_nxt import DobissAuth, DobissClient, DobissWebSocket, StateTracker
 
-The project is deliberately split in two repositories, following Home
-Assistant best practice:
+async def main():
+    auth = DobissAuth("192.168.1.10", "your-api-secret")
+    async with ClientSession() as session:
+        client = DobissClient(auth, session)
 
-| Repository | Role |
+        # Discover the installation
+        discovery = await client.discover()
+        for s in discovery.unique_subjects():
+            print(s.key, s.name, s.type, "dimmable" if s.dimmable else "")
+
+        # Control an output
+        await client.turn_on(2, 0, brightness=60)   # dim to 60 %
+        await client.toggle(1, 3)
+
+        # Real-time state over WebSocket
+        tracker = StateTracker()
+        ws = DobissWebSocket(auth, session)
+        ws.start(lambda update: print("changed:", tracker.apply(update)))
+        await asyncio.sleep(60)
+        await ws.stop()
+
+asyncio.run(main())
+```
+
+The API secret comes from the NXT web UI: *Global settings → API*.
+
+## What's inside
+
+| Module | Purpose |
 |---|---|
-| [`pydobiss-nxt`](https://github.com/Difre-kab/pydobiss-nxt) | Standalone async Python library: JWT auth, REST client, WebSocket listener, typed models (Pydantic v2), unified state tracking. Published on PyPI, usable without Home Assistant. |
-| `ha-dobiss-nxt` (this repo) | The Home Assistant integration: config flow, update coordinator, entity platforms. Declares `pydobiss-nxt` in its manifest; HA installs it from PyPI automatically. |
+| `auth` | Self-signed JWT (HS256) with auto-refresh; pairing-mode `fetch_secret()` |
+| `client` | REST: `discover()`, `get_status()`, `action()` + `turn_on/off/toggle` |
+| `websocket` | Push listener, auto-reconnect with exponential backoff |
+| `models` | Pydantic v2 models, tolerant of firmware quirks, `extra` preserved |
+| `status` | Unified parser for the three NXT status formats + `StateTracker` |
+| `const` | Module types, icon IDs, actions as `IntEnum` |
+| `exceptions` | `DobissError` → `DobissConnectionError` / `DobissAuthError` / `DobissApiError` |
 
-Data flow at runtime:
-
-```
-Wall switch ──► DOBISS NXT ──WebSocket──► DobissWebSocket ──► StateTracker
-                                                                  │ changed keys
-DOBISS NXT ◄──REST /action── DobissClient ◄── light.turn_on   Coordinator
-                                                                  │
-                                                          HA entities update
-```
-
-## Requirements
-
-- A DOBISS NXT server on your local network, **firmware 4.x**
-  (developed and tested against 4.30)
-- API enabled on the NXT: *Global settings → API → API enabled*, and
-  the JWT secret from that same screen
-- Home Assistant 2026.x
-
-## Installation (manual, for now)
-
-1. Copy `custom_components/dobiss_nxt/` into the `custom_components/`
-   folder of your Home Assistant config directory.
-2. Restart Home Assistant (it will install `pydobiss-nxt` from PyPI).
-3. *Settings → Devices & services → Add integration → "DOBISS NXT"*.
-4. Enter the NXT host (IP address) and the API secret.
-
-HACS distribution is planned — see the roadmap.
-
-## Entity mapping
-
-The DOBISS *icon* chosen in the configuration software decides what an
-output becomes in Home Assistant; the *module type* decides its
-capabilities:
-
-| DOBISS icon | Module type | HA entity |
-|---|---|---|
-| Light, table light | Relay | `light` (on/off) |
-| Light, table light | 0-10V / DALI / dimmer | `light` (brightness) |
-| Plug, heating, ... | Relay | `switch` *(planned)* |
-| Scenario | virtual | `button` *(planned)* |
-| Up/Down pair | Relay | `cover` *(planned)* |
-| Audio zone | virtual | `media_player` *(planned)* |
-
-## Development
-
-Everyday loop while developing against a real Home Assistant:
-
-```
-edit code on the PC
-  → copy custom_components/dobiss_nxt to HA config (Samba share add-on)
-  → restart Home Assistant
-  → check Settings → System → Logs (search "dobiss")
-```
-
-The heavy lifting (protocol, parsing, reconnection) lives in the
-library, which has its own test suite (35 tests, `mypy --strict`,
-ruff, CI on Python 3.12/3.13) — see the
-[`pydobiss-nxt`](https://github.com/Difre-kab/pydobiss-nxt) repo.
+Developed and validated against real NXT hardware, firmware 4.30.
+Quality gates: 35 tests (including a fake NXT server), `mypy --strict`,
+ruff, CI on Python 3.12 & 3.13.
 
 ## License
 
