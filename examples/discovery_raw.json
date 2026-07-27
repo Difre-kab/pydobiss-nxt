@@ -145,7 +145,7 @@
       },
       "subjects": [
         {
-          "name": "Lampe WC 2ème etage",
+          "name": "Lampe WC 2Ã¨me etage",
           "address": "1",
           "channel": "10",
           "type": "8",
@@ -355,7 +355,7 @@
           }
         },
         {
-          "name": "Lumière applique SDB",
+          "name": "LumiÃ¨re applique SDB",
           "address": "1",
           "channel": "8",
           "type": "8",
@@ -613,7 +613,7 @@
           }
         },
         {
-          "name": "Lampe WC 2ème etage",
+          "name": "Lampe WC 2Ã¨me etage",
           "address": "1",
           "channel": "10",
           "type": "8",
@@ -751,7 +751,7 @@
           }
         },
         {
-          "name": "EXTÉRIEURE",
+          "name": "EXTÃ‰RIEURE",
           "address": "0",
           "channel": "15",
           "type": "0",
@@ -781,7 +781,7 @@
       },
       "subjects": [
         {
-          "name": "Lampe façade avant mur",
+          "name": "Lampe faÃ§ade avant mur",
           "address": "1",
           "channel": "1",
           "type": "8",
@@ -799,7 +799,7 @@
           }
         },
         {
-          "name": "Lampe façade arrière",
+          "name": "Lampe faÃ§ade arriÃ¨re",
           "address": "1",
           "channel": "0",
           "type": "8",
@@ -898,7 +898,7 @@
       },
       "subjects": [
         {
-          "name": "Lampe extérieur coucher du soleil jusque 23h",
+          "name": "Lampe extÃ©rieur coucher du soleil jusque 23h",
           "address": 202,
           "channel": "1",
           "type": 202,
@@ -968,7 +968,7 @@
           }
         },
         {
-          "name": "Simulation de présence",
+          "name": "Simulation de prÃ©sence",
           "address": 202,
           "channel": "3",
           "type": 202,
@@ -990,7 +990,7 @@
       },
       "subjects": [
         {
-          "name": "Assistant de configuration: Simulation de présence",
+          "name": "Assistant de configuration: Simulation de prÃ©sence",
           "address": 203,
           "channel": "3",
           "type": 203,
