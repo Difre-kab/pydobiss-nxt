@@ -12,7 +12,7 @@ The models are deliberately *tolerant*:
   be surfaced verbatim in Home Assistant diagnostics later.
 """
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from .const import IconId, ModuleType
 
@@ -32,6 +32,12 @@ class DobissSubject(BaseModel):
     dimmable: bool
     type: ModuleType | int
     icons_id: IconId | int
+
+    @field_validator("dimmable", mode="before")
+    @classmethod
+    def _null_means_not_dimmable(cls, value: object) -> object:
+        """NXT firmware (seen on 4.30) sends ``null`` for non-dimmable outputs."""
+        return False if value is None else value
 
     @property
     def key(self) -> str:
