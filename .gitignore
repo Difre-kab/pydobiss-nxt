@@ -3,5 +3,3 @@ __pycache__/
 *.egg-info/
 examples/discovery_raw.json
 examples/ws_captures.jsonldist/
-examples/discovery_raw.json
-examples/discovery_raw.json
