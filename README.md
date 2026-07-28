@@ -1,6 +1,9 @@
 # pydobiss-nxt
 
+[![CI](https://github.com/Difre-kab/pydobiss-nxt/actions/workflows/ci.yml/badge.svg)](https://github.com/Difre-kab/pydobiss-nxt/actions)
 [![PyPI](https://img.shields.io/pypi/v/pydobiss-nxt)](https://pypi.org/project/pydobiss-nxt/)
+[![Python](https://img.shields.io/pypi/pyversions/pydobiss-nxt)](https://pypi.org/project/pydobiss-nxt/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Async Python client for the **DOBISS NXT** home automation server
 (local REST + WebSocket API). Fully typed (`mypy --strict`), built on
