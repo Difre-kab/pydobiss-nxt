@@ -1,0 +1,19 @@
+# Dependabot: weekly checks for dependency and CI-action updates.
+# Each update arrives as a pull request that the CI validates automatically.
+version: 2
+updates:
+  # Python dependencies (pyproject.toml: aiohttp, pydantic, PyJWT, dev tools)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies"]
+
+  # GitHub Actions used in .github/workflows (checkout, setup-python, ...)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "ci"]
